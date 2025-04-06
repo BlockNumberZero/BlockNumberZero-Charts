@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #chart { max-width: 800px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div id="chart"></div>
+  <script>
+    // Data: Top Economies by Merchandise Exports (2022)
+    const data = [{
+      x: ["China", "United States", "Germany", "Netherlands", "Japan", "South Korea", "France"],
+      y: [3594, 2085, 1939, 1073, 914, 727, 627],
+      type: 'bar',
+      marker: { color: '#4A90E2' },
+      text: ['$3.594T', '$2.085T', '$1.939T', '$1.073T', '$0.914T', '$0.727T', '$0.627T'],
+      hoverinfo: 'y+text',
+    }];
+
+    const layout = {
+      title: 'Top Economies by Merchandise Exports (2022)',
+      xaxis: { title: 'Country' },
+      yaxis: { title: 'Exports (USD Billion)' },
+      hoverlabel: { bgcolor: '#ffffff' }
+    };
+
+    Plotly.newPlot('chart', data, layout);
+  </script>
+</body>
+</html>
