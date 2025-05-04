@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Web3 Security Losses Q1 2025</title>
+  <meta name="description" content="Visual breakdown of Web3 security losses in Q1 2025: access control exploits, phishing, rugpulls, and more.">
+  <meta name="keywords" content="web3 security, crypto hacks 2025, access control exploits, phishing, rugpulls, smart contract vulnerabilities">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; color: #222; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 24px; }
+    h2 { color: #1a73e8; }
+    img { max-width: 100%; border-radius: 6px; margin-bottom: 18px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="web3-security-2025.png" alt="Web3 Security 2025" />
+    <h2>Web3 Security Losses by Cause (Q1 2025)</h2>
+    <canvas id="lossesChart" width="500" height="350"></canvas>
+    <p style="font-size: 0.95em; color: #555; margin-top: 14px;">
+      Data source: Hacken, CertiK, SlowMist Q1 2025 security reports.<br>
+      <strong>Access Control Exploits</strong> (e.g., multisig failures) caused the majority of losses, with phishing and rugpulls also significant.
+    </p>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('lossesChart').getContext('2d');
+    const lossesChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: [
+          'Access Control Exploits ($1.6B)',
+          'Rugpulls & Phishing (~$400M)',
+          'Smart Contract Exploits ($29M)',
+          'Other Causes (~$100M)'
