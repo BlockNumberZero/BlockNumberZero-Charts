@@ -64,6 +64,9 @@
                     <button id="tab-google" class="tab-button whitespace-nowrap py-3 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 active" data-target="panel-google">
                         Google
                     </button>
+                    <button id="tab-email-link" class="tab-button whitespace-nowrap py-3 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-target="panel-email-link">
+                        Email Link
+                    </button>
                     <button id="tab-email" class="tab-button whitespace-nowrap py-3 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-target="panel-email">
                         E-mail Login
                     </button>
@@ -82,6 +85,18 @@
                     Access with Google
                 </button>
             </div>
+
+            <div id="panel-email-link" class="hidden">
+                 <p class="text-sm text-gray-600 mb-4 text-center">Enter your whitelisted email to receive a sign-in link.</p>
+                 <div class="mb-4">
+                    <label for="email-link-input" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email-link-input" name="email-link-input" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500" placeholder="whitelisted@example.com">
+                 </div>
+                 <button id="send-link-button" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-75 transition duration-150 ease-in-out">
+                    Send Sign-in Link
+                 </button>
+            </div>
+
 
             <div id="panel-email" class="hidden">
                  <p class="text-sm text-gray-600 mb-4 text-center">Login with your registered email and password.</p>
@@ -159,7 +174,7 @@
         const authContainer = document.getElementById('auth-container');
         const appContent = document.getElementById('app-content');
         const userEmailSpan = document.getElementById('user-email');
-        const logoutButton = document.getElementById('logout-button'); // Already existed, just ensure it's targeted correctly
+        const logoutButton = document.getElementById('logout-button');
         const messageArea = document.getElementById('message-area');
         const loaderArea = document.getElementById('loader-area');
 
@@ -168,7 +183,8 @@
         const tabPanels = {
             google: document.getElementById('panel-google'),
             email: document.getElementById('panel-email'),
-            register: document.getElementById('panel-register')
+            register: document.getElementById('panel-register'),
+            emailLink: document.getElementById('panel-email-link') // Added new panel
         };
 
         // Input Fields
@@ -176,11 +192,13 @@
         const loginPasswordInput = document.getElementById('login-password');
         const registerEmailInput = document.getElementById('register-email');
         const registerPasswordInput = document.getElementById('register-password');
+        const emailLinkInput = document.getElementById('email-link-input'); // Added new input
 
         // Buttons
         const googleSigninButton = document.getElementById('google-signin-button');
         const emailLoginButton = document.getElementById('email-login-button');
         const emailRegisterButton = document.getElementById('email-register-button');
+        const sendLinkButton = document.getElementById('send-link-button'); // Added new button
 
         // --- Helper Functions ---
 
@@ -189,6 +207,7 @@
             googleSigninButton.disabled = true;
             emailLoginButton.disabled = true;
             emailRegisterButton.disabled = true;
+            sendLinkButton.disabled = true; // Disable new button
         }
 
         function hideLoader() {
@@ -196,6 +215,7 @@
             googleSigninButton.disabled = false;
             emailLoginButton.disabled = false;
             emailRegisterButton.disabled = false;
+            sendLinkButton.disabled = false; // Enable new button
         }
 
         function showMessage(message, type = 'error') {
@@ -206,7 +226,6 @@
             messageArea.innerHTML = '';
         }
 
-        // Updated to reflect new structure within #app-content
         function showAppContent(user) {
             userEmailSpan.textContent = user.email; // Display user's email
             authContainer.classList.add('hidden'); // Hide login section
@@ -224,19 +243,21 @@
             loginPasswordInput.value = '';
             registerEmailInput.value = '';
             registerPasswordInput.value = '';
+            emailLinkInput.value = ''; // Clear new input
+            clearMessage(); // Clear messages when showing auth container
             hideLoader();
         }
 
         async function isEmailWhitelisted(email) {
             if (!email) return false;
             try {
-                // Assumes collection 'whitelist', docs named by email
+                // Use the correct collection name 'permit_emails'
                 const docRef = db.collection('permit_emails').doc(email);
                 const docSnap = await docRef.get();
                 return docSnap.exists;
             } catch (error) {
-                console.error("Error checking whitelist:", error);
-                showMessage("Error checking whitelist. Please try again later.", "error");
+                console.error("Error checking permit_emails:", error);
+                showMessage("Error checking access. Please try again later.", "error");
                 return false;
             }
         }
@@ -249,95 +270,133 @@
                 button.classList.add('active');
                 const targetPanelId = button.getAttribute('data-target');
                 document.getElementById(targetPanelId).classList.remove('hidden');
-                clearMessage();
+                clearMessage(); // Clear messages when switching tabs
             });
         });
 
         // --- Firebase Authentication Logic ---
 
-        // Google Sign-In
+        // Google Sign-In (Existing, ensure whitelist check is correct)
         googleSigninButton.addEventListener('click', async () => {
             clearMessage();
             showLoader();
             try {
                 const result = await auth.signInWithPopup(googleProvider);
                 const user = result.user;
-                const whitelisted = await isEmailWhitelisted(user.email);
-                if (whitelisted) {
-                    console.log("Google Sign-In successful and whitelisted:", user.email);
-                    // Auth state listener handles showing app content
-                } else {
-                    await auth.signOut();
-                    showMessage(`Access denied. Email ${user.email} is not whitelisted.`, 'error');
-                    hideLoader();
-                }
+                // Whitelist check happens in onAuthStateChanged
+                console.log("Google Sign-In successful for:", user.email);
+                // The auth state listener will handle the rest (whitelist check and showing app content)
             } catch (error) {
                 console.error("Google Sign-In Error:", error);
-                // Avoid showing generic "error.message" if it's user cancellation
                 if (error.code !== 'auth/popup-closed-by-user') {
                     showMessage(`Google Sign-In failed: ${error.message}`, 'error');
                 }
-                hideLoader();
+                hideLoader(); // Ensure loader is hidden on error
             }
         });
 
-        // Email/Password Registration
-        emailRegisterButton.addEventListener('click', async () => {
-            const email = registerEmailInput.value.trim();
-            const password = registerPasswordInput.value;
+        // Email Link: Send the link
+        sendLinkButton.addEventListener('click', async () => {
+            const email = emailLinkInput.value.trim();
             clearMessage();
 
-            if (!email || !password) return showMessage("Please enter both email and password.", 'error');
-            if (password.length < 6) return showMessage("Password must be at least 6 characters long.", 'error');
+            if (!email) {
+                return showMessage("Please enter your email address.", 'error');
+            }
 
             showLoader();
+
+            // Optional but recommended: Check whitelist *before* sending link
+            // This prevents sending links to non-whitelisted emails
             const whitelisted = await isEmailWhitelisted(email);
-            if (!whitelisted) {
-                showMessage(`Registration failed. Email ${email} is not whitelisted.`, 'error');
-                hideLoader();
-                return;
-            }
+             if (!whitelisted) {
+                 showMessage(`Access denied. Email ${email} is not whitelisted.`, 'error');
+                 hideLoader();
+                 return;
+             }
+
+            // ActionCodeSettings for the email link
+            const actionCodeSettings = {
+                url: 'https://blocknumberzero.github.io/BlockNumberZero-Charts/', // Or use a specific URL like 'https://your-github-username.github.io/BlockNumberZero-Charts/index.html'
+                handleCodeInApp: true, // This needs to be true for web apps.
+                // iOS: { bundleId: 'com.example.ios' }, // Optional, if you have iOS app
+                // android: { packageName: 'com.example.android', installApp: true, minimumVersion: '12' }, // Optional, if you have Android app
+                 dynamicLinkDomain: 'YOUR_FIREBASE_PROJECT_NAME.page.link' // Optional: If you use Firebase Dynamic Links
+            };
 
             try {
-                await auth.createUserWithEmailAndPassword(email, password);
-                console.log("Registration successful for:", email);
+                await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+                // Store the email in local storage so we can get it when the user clicks the link
+                window.localStorage.setItem('emailForSignIn', email);
+                showMessage(`A sign-in link has been sent to ${email}. Please check your inbox.`, 'success');
+                console.log("Sign-in link sent to:", email);
+            } catch (error) {
+                console.error("Send Link Error:", error);
+                showMessage(`Failed to send sign-in link: ${error.message}`, 'error');
+            } finally {
+                hideLoader(); // Ensure loader is hidden
+            }
+        });
+
+
+        // Email/Password Registration (Existing - remove if you only want passwordless)
+        //emailRegisterButton.addEventListener('click', async () => {
+        //    const email = registerEmailInput.value.trim();
+        //    const password = registerPasswordInput.value;
+        //    clearMessage();
+
+        //    if (!email || !password) return showMessage("Please enter both email and password.", 'error');
+        //    if (password.length < 6) return showMessage("Password must be at least 6 characters long.", 'error');
+
+        //    showLoader();
+        //     const whitelisted = await isEmailWhitelisted(email);
+        //     if (!whitelisted) {
+        //         showMessage(`Registration failed. Email ${email} is not whitelisted.`, 'error');
+        //         hideLoader();
+        //         return;
+        //     }
+
+
+        //    try {
+        //        await auth.createUserWithEmailAndPassword(email, password);
+        //        console.log("Registration successful for:", email);
                 // Auth state listener handles showing app content
-            } catch (error) {
-                console.error("Registration Error:", error);
-                if (error.code === 'auth/email-already-in-use') {
-                     showMessage('This email address is already registered. Please use the Login tab.', 'error');
-                } else {
-                    showMessage(`Registration failed: ${error.message}`, 'error');
-                }
-                hideLoader();
-            }
-        });
+        //    } catch (error) {
+        //        console.error("Registration Error:", error);
+        //        if (error.code === 'auth/email-already-in-use') {
+        //             showMessage('This email address is already registered. Please use the Login tab.', 'error');
+        //        } else {
+        //            showMessage(`Registration failed: ${error.message}`, 'error');
+        //        }
+        //        hideLoader();
+        //    }
+        //});
 
-        // Email/Password Login
-        emailLoginButton.addEventListener('click', async () => {
-            const email = loginEmailInput.value.trim();
-            const password = loginPasswordInput.value;
-            clearMessage();
+        // Email/Password Login (Existing - remove if you only want passwordless)
+        //emailLoginButton.addEventListener('click', async () => {
+        //    const email = loginEmailInput.value.trim();
+        //    const password = loginPasswordInput.value;
+        //    clearMessage();
 
-            if (!email || !password) return showMessage("Please enter both email and password.", 'error');
+        //    if (!email || !password) return showMessage("Please enter both email and password.", 'error');
 
-            showLoader();
-            try {
-                await auth.signInWithEmailAndPassword(email, password);
-                console.log("Email Login successful for:", email);
+        //    showLoader();
+        //    try {
+        //        await auth.signInWithEmailAndPassword(email, password);
+        //        console.log("Email Login successful for:", email);
                  // Auth state listener handles showing app content
-            } catch (error) {
-                console.error("Login Error:", error);
-                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                     showMessage('Invalid email or password.', 'error');
-                 } else {
-                    showMessage(`Login failed: ${error.message}`, 'error');
-                 }
-                hideLoader();
-            }
-        });
+        //    } catch (error) {
+        //        console.error("Login Error:", error);
+        //         if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        //             showMessage('Invalid email or password.', 'error');
+        //         } else {
+        //            showMessage(`Login failed: ${error.message}`, 'error');
+        //         }
+        //         hideLoader();
+        //    }
+        //});
 
-        // Logout Button Event Listener (ensure it's only added once)
+        // Logout Button Event Listener
         if (logoutButton) {
             logoutButton.addEventListener('click', async () => {
                 try {
@@ -346,7 +405,6 @@
                     // Auth state listener will handle showing the login form
                 } catch (error) {
                     console.error("Sign Out Error:", error);
-                    // Show error in the main message area if sign out fails
                     showMessage(`Logout failed: ${error.message}`, 'error');
                 }
             });
@@ -374,12 +432,56 @@
                 // User is signed out.
                 console.log("Auth state changed: User logged out");
                 showAuthContainer(); // Show the login form
+                 // Handle email link sign-in attempt on page load if user is not already signed in
+                handleEmailLinkSignIn();
             }
         });
 
+        // --- Handle Email Link Sign-in on Page Load ---
+        async function handleEmailLinkSignIn() {
+            // Check if the current URL is a sign-in link.
+            if (auth.isSignInWithEmailLink(window.location.href)) {
+                showLoader();
+                clearMessage();
+
+                // Get email from local storage.
+                let email = window.localStorage.getItem('emailForSignIn');
+                if (!email) {
+                    // If email is not in local storage, prompt the user to enter it.
+                    email = window.prompt('Please provide your email for confirmation.');
+                    if (!email) {
+                        showMessage('Sign-in failed. Email not provided.', 'error');
+                         hideLoader();
+                        return;
+                    }
+                }
+
+                try {
+                    // Sign in user with the email link.
+                    await auth.signInWithEmailLink(email, window.location.href);
+                    // Clear email from local storage.
+                    window.localStorage.removeItem('emailForSignIn');
+                    console.log("Email Link Sign-in successful for:", email);
+                    // The auth state listener will handle the whitelist check and showing app content
+                } catch (error) {
+                    console.error("Email Link Sign-in Error:", error);
+                    showMessage(`Email link sign-in failed: ${error.message}`, 'error');
+                } finally {
+                     hideLoader(); // Ensure loader is hidden
+                }
+            }
+        }
+
+
         // --- Initial Setup ---
         // Set the initial active tab (Google)
-        document.getElementById('tab-google').click();
+         // Call handleEmailLinkSignIn immediately on page load to process links
+        // The onAuthStateChanged listener will then show the appropriate container.
+        // So, we don't need the initial tab click here anymore, the listener manages state.
+        // document.getElementById('tab-google').click(); // REMOVED
+
+        // Initial check of auth state and handling of email links will happen
+        // automatically due to the onAuthStateChanged listener and the handleEmailLinkSignIn call.
 
     </script>
 
