@@ -252,7 +252,8 @@
             if (!email) return false;
             try {
                 // Use the correct collection name 'permit_emails'
-                const docRef = db.collection('permit_emails').doc(email);
+                const lowerCaseEmail = email.toLowerCase(); // Convert input to lowercase
+                const docRef = db.collection('permit_emails').doc(lowerCaseEmail); // Query with lowercase
                 const docSnap = await docRef.get();
                 return docSnap.exists;
             } catch (error) {
