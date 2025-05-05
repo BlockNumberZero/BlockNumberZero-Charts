@@ -231,7 +231,7 @@
             if (!email) return false;
             try {
                 // Assumes collection 'whitelist', docs named by email
-                const docRef = db.collection('whitelist').doc(email);
+                const docRef = db.collection('permit_emails').doc(email);
                 const docSnap = await docRef.get();
                 return docSnap.exists;
             } catch (error) {
